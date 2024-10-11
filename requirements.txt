@@ -1,2 +1,5 @@
-fastapi
+fastapi~=0.115.0
 uvicorn[standard]
+sqlalchemy
+pymysql
+pydantic~=2.9.2
