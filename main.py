@@ -1,9 +1,11 @@
 from fastapi import FastAPI, HTTPException, Depends, status
-from pydantic import BaseModel
 from typing import Annotated
-from models import model
+import model
+import schema
 from config.database import engine, Sessionlocal
 from sqlalchemy.orm import Session
+
+from schema import Message
 
 app = FastAPI()
 
@@ -20,25 +22,21 @@ def get_db():
 db_dependency = Annotated[Session, Depends(get_db)]
 
 
-@app.get("/me")
-async def get_me():
-    return {"Msg": "test"}
-
-class Test(BaseModel):
-    name : str
-    age  : int | None = None
-
-@app.post("/submit")
-async def submit(item: Test):
-    print(item)
-    return item
+@app.put("/pushmsg/", response_model=schema.Message)
+async def PushMsg(message: schema.Message, db:  db_dependency):
+    query = model.Message(**message.model_dump())
+    try:
+        db.add(query)
+        db.commit()
+        # db.refresh()
+        return query
+    except Exception as err:
+        return err
 
 @app.get("/items")
-async def printItem(*, channelId: int, accountId: int | None = None, db: db_dependency):
-    post = db.query(model.Channel).filter(model.Channel.id == channelId).first()
+async def printItem(*, name: str | None = None, channelId: int | None = None, accountId: int | None = None, db: db_dependency):
+    post = db.query(model.Channel).filter(model.Channel.Name == name).all()
 
     return post
 
-@app.put("/items/{item_name}")
-async def CreateItem(item_name: str, item: Test):
-    return {"name": item_name, **item.model_dump()}
+
